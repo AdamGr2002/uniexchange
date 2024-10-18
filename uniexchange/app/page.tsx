@@ -1,101 +1,219 @@
-import Image from "next/image";
+"use client"
+
+import { useState, useEffect } from "react"
+import { UserButton } from "@clerk/nextjs"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Book, Search, Upload, FileText, Folder } from "lucide-react"
+
+interface Material {
+  id: number
+  title: string
+  description: string
+  university: string
+  subject: string
+  year: number
+  created_at: string
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [recommendations, setRecommendations] = useState<Material[]>([])
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [university, setUniversity] = useState("")
+  const [subject, setSubject] = useState("")
+  const [year, setYear] = useState("")
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    fetchMaterials()
+    fetchRecommendations()
+  }, [])
+
+  const fetchMaterials = async () => {
+    const response = await fetch(`/api/materials?page=${page}`)
+    const data = await response.json()
+    setMaterials(prev => [...prev, ...data.materials])
+    setHasMore(data.hasMore)
+    setPage(prev => prev + 1)
+  }
+
+  const fetchRecommendations = async () => {
+    const response = await fetch('/api/recommendations')
+    const data = await response.json()
+    setRecommendations(data)
+  }
+
+  const handleSearch = async () => {
+    const params = new URLSearchParams({
+      q: searchQuery,
+      ...(university && { university }),
+      ...(subject && { subject }),
+      ...(year && { year })
+    })
+    const response = await fetch(`/api/search?${params}`)
+    const data = await response.json()
+    setMaterials(data)
+    setHasMore(false)
+  }
+
+  const recordInteraction = async (materialId: number, interactionType: string) => {
+    await fetch('/api/interactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ materialId, interactionType }),
+    })
+  }
+
+  const renderMaterial = (material: Material) => (
+    <div key={material.id} className="rounded-lg border p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <FileText className="h-5 w-5 text-blue-500" />
+          <span className="font-medium">{material.title}</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <Button variant="ghost" size="icon">
+          <Folder className="h-4 w-4" />
+          <span className="sr-only">Download</span>
+        </Button>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        University: {material.university}
+      </p>
+      <p className="text-sm text-muted-foreground">
+        Subject: {material.subject}
+      </p>
+      <p className="text-sm text-muted-foreground">
+        Year: {material.year}
+      </p>
+      <p className="text-sm text-muted-foreground">
+        Date: {new Date(material.created_at).toLocaleDateString()}
+      </p>
+      <div className="mt-2 flex items-center space-x-2">
+        <Link href={`/material/${material.id}`}>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => recordInteraction(material.id, 'view')}
+          >
+            View Details
+          </Button>
+        </Link>
+      </div>
     </div>
-  );
+  )
+
+  return (
+    <div className="flex h-screen flex-col">
+      <header className="flex items-center justify-between border-b px-6 py-4">
+        <div className="flex items-center space-x-4">
+          <Book className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">UniExchange</h1>
+        </div>
+        <div className="flex items-center space-x-4">
+          <UserButton afterSignOutUrl="/" />
+        </div>
+      </header>
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-64 border-r p-6">
+          <nav className="space-y-6">
+            <div>
+              <label htmlFor="university" className="text-sm font-medium">University</label>
+              <Select value={university} onValueChange={setUniversity}>
+                <SelectTrigger id="university">
+                  <SelectValue placeholder="Select University" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tunis">University of Tunis</SelectItem>
+                  <SelectItem value="sfax">University of Sfax</SelectItem>
+                  <SelectItem value="sousse">University of Sousse</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="subject" className="text-sm font-medium">Subject</label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger id="subject">
+                  <SelectValue placeholder="Select Subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cs">Computer Science</SelectItem>
+                  <SelectItem value="engineering">Engineering</SelectItem>
+                  <SelectItem value="medicine">Medicine</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="year" className="text-sm font-medium">Year of Study</label>
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger id="year">
+                  <SelectValue placeholder="Select Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1st Year</SelectItem>
+                  <SelectItem value="2">2nd Year</SelectItem>
+                  <SelectItem value="3">3rd Year</SelectItem>
+                  <SelectItem value="4">4th Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </nav>
+        </aside>
+        <main className="flex-1 p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="relative flex-grow mr-4">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search materials..." 
+                className="pl-8 pr-20" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Button 
+                className="absolute right-0 top-0 bottom-0" 
+                onClick={handleSearch}
+              >
+                Search
+              </Button>
+            </div>
+            <Link href="/upload">
+              <Button>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Material
+              </Button>
+            </Link>
+          </div>
+          <ScrollArea className="h-[calc(100vh-12rem)]">
+            {recommendations.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Recommended for You</h2>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {recommendations.map(renderMaterial)}
+                </div>
+              </div>
+            )}
+            <h2 className="text-2xl font-bold mb-4">All Materials</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {materials.map(renderMaterial)}
+            </div>
+            {hasMore && (
+              <Button onClick={fetchMaterials} className="mt-4">Load More Materials</Button>
+            )}
+          </ScrollArea>
+        </main>
+      </div>
+    </div>
+  )
 }
