@@ -27,7 +27,6 @@ interface Material {
 
 export default function Home() {
   const [materials, setMaterials] = useState<Material[]>([])
-  const [recommendations, setRecommendations] = useState<Material[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -37,7 +36,6 @@ export default function Home() {
 
   useEffect(() => {
     fetchMaterials()
-    fetchRecommendations()
   }, [])
 
   const fetchMaterials = async () => {
@@ -46,12 +44,6 @@ export default function Home() {
     setMaterials(prev => [...prev, ...data.materials])
     setHasMore(data.hasMore)
     setPage(prev => prev + 1)
-  }
-
-  const fetchRecommendations = async () => {
-    const response = await fetch('/api/recommendations')
-    const data = await response.json()
-    setRecommendations(data)
   }
 
   const handleSearch = async () => {
@@ -66,54 +58,6 @@ export default function Home() {
     setMaterials(data)
     setHasMore(false)
   }
-
-  const recordInteraction = async (materialId: number, interactionType: string) => {
-    await fetch('/api/interactions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ materialId, interactionType }),
-    })
-  }
-
-  const renderMaterial = (material: Material) => (
-    <div key={material.id} className="rounded-lg border p-4">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <FileText className="h-5 w-5 text-blue-500" />
-          <span className="font-medium">{material.title}</span>
-        </div>
-        <Button variant="ghost" size="icon">
-          <Folder className="h-4 w-4" />
-          <span className="sr-only">Download</span>
-        </Button>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        University: {material.university}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Subject: {material.subject}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Year: {material.year}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Date: {new Date(material.created_at).toLocaleDateString()}
-      </p>
-      <div className="mt-2 flex items-center space-x-2">
-        <Link href={`/material/${material.id}`}>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => recordInteraction(material.id, 'view')}
-          >
-            View Details
-          </Button>
-        </Link>
-      </div>
-    </div>
-  )
 
   return (
     <div className="flex h-screen flex-col">
@@ -196,17 +140,40 @@ export default function Home() {
             </Link>
           </div>
           <ScrollArea className="h-[calc(100vh-12rem)]">
-            {recommendations.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Recommended for You</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {recommendations.map(renderMaterial)}
-                </div>
-              </div>
-            )}
-            <h2 className="text-2xl font-bold mb-4">All Materials</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {materials.map(renderMaterial)}
+              {materials.map((material) => (
+                <div key={material.id} className="rounded-lg border p-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-5 w-5 text-blue-500" />
+                      <span className="font-medium">{material.title}</span>
+                    </div>
+                    <Button variant="ghost" size="icon">
+                      <Folder className="h-4 w-4" />
+                      <span className="sr-only">Download</span>
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    University: {material.university}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Subject: {material.subject}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Year: {material.year}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Date: {new Date(material.created_at).toLocaleDateString()}
+                  </p>
+                  <div className="mt-2 flex items-center space-x-2">
+                    <Link href={`/material/${material.id}`}>
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
             {hasMore && (
               <Button onClick={fetchMaterials} className="mt-4">Load More Materials</Button>

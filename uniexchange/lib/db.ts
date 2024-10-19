@@ -5,9 +5,7 @@ import { open } from 'sqlite'
 let db: any = null
 
 async function openDb() {
-  if (!db) 
-
- {
+  if (!db) {
     db = await open({
       filename: './uniexchange.sqlite',
       driver: sqlite3.Database
@@ -65,9 +63,44 @@ async function openDb() {
         is_read BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS user_interactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        material_id INTEGER,
+        interaction_type TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (material_id) REFERENCES materials (id)
+      );
     `)
   }
   return db
 }
 
-export { openDb }
+async function searchMaterials(query: string, filters: { university?: string, subject?: string, year?: string }) {
+  const db = await openDb()
+  let sql = `
+    SELECT * FROM materials
+    WHERE (title LIKE ? OR description LIKE ?)
+  `
+  const params = [`%${query}%`, `%${query}%`]
+
+  if (filters.university) {
+    sql += ' AND university = ?'
+    params.push(filters.university)
+  }
+  if (filters.subject) {
+    sql += ' AND subject = ?'
+    params.push(filters.subject)
+  }
+  if (filters.year) {
+    sql += ' AND year = ?'
+    params.push(filters.year)
+  }
+
+  sql += ' ORDER BY created_at DESC'
+
+  return db.all(sql, params)
+}
+
+export { openDb, searchMaterials }

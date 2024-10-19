@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { searchMaterials } from '@/lib/elasticsearch'
+import { searchMaterials } from '@/lib/db'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -12,10 +12,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Query is required' }, { status: 400 })
   }
 
-  const filters: { [key: string]: string | number } = {}
-  if (university) filters['university'] = university
-  if (subject) filters['subject'] = subject
-  if (year) filters['year'] = parseInt(year)
+  const filters = {
+    ...(university && { university }),
+    ...(subject && { subject }),
+    ...(year && { year })
+  }
 
   const results = await searchMaterials(query, filters)
 
